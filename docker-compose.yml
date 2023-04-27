@@ -1,0 +1,34 @@
+version: '3'
+services:
+  nginx:
+    image: nginx:1.17-alpine # nginxのimageにnginx:1.17-alpineを指定
+    ports:
+      - "80:80" # ホストの8080ポートでnginxコンテナの80にアクセス
+    volumes:
+      - ./src:/var/www # ホストのsrcをnginxコンテナの/var/wwwにマウント
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf # 作成したdefault.confを/etc/nginx/conf.d/default.confにマウント
+    depends_on: # コンテナの依存関係を定義する
+      - php-fpm # php-fpmの起動後にnginxを起動
+  php-fpm:
+    build: ./docker/php # ./docker/php/Dockerfileをbuildしてイメージ作成
+    volumes:
+      - ./src:/var/www # ホストのsrcをphp-fpmコンテナの/var/wwwにマウント
+    links: # コンテナと他のサービスを繋げる
+      - db
+    depends_on:
+      - db # dbの起動後にphp-fpmを起動
+  db:
+#    platform: linux/arm64
+    image: mysql:5.7 # mysqlのimageにmysql:8.0.18を指定
+    volumes:
+      - ./docker/mysql/conf.d:/etc/mysql/conf.d # mysqlのせってファイルをマウント
+      - ./docker/mysql/data:/var/lib/mysql # mysqlのデータ永続化
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_DATABASE: shunju
+      MYSQL_USER: shunju
+      MYSQL_PASSWORD: shunju
+      MYSQL_ROOT_PASSWORD: root
+      TZ: "Asia/Tokyo"
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
